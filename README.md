@@ -4,9 +4,11 @@
 
 **Asignatura:** Programación II
 
-**Práctica 2:** CRUD Web API en ASP.NET Core con SQL Server.
+**Práctica 3:** Capa de Dominio e Infraestructura.
 
-API para registrar, consultar, actualizar y eliminar clientes y paquetes de un courier. Cada paquete pertenece a un cliente y los datos se guardan en SQL Server.
+API para registrar, consultar, actualizar y eliminar clientes, paquetes, estados y envíos de un courier. Los datos se guardan en SQL Server.
+
+La solución contiene tres proyectos: API, Domain e Infrastructure. Los controladores reciben repositorios por inyección de dependencias y no acceden directamente al contexto. ClienteRepository y PaqueteRepository heredan de GenericRepository; Envíos y Estados utilizan el repositorio genérico.
 
 ## Tecnologías
 
@@ -27,15 +29,25 @@ API para registrar, consultar, actualizar y eliminar clientes y paquetes de un c
 ### 1. Descargar el repositorio
 
 ```powershell
-git clone https://github.com/David202010036/ControlEnviosCourier.git
+git clone --branch tarea-3 https://github.com/David202010036/ControlEnviosCourier.git
 cd ControlEnviosCourier
 ```
 
 ### 2. Crear la base de datos
 
-En SSMS, conectarse al servidor y ejecutar `Database/CrearBaseDeDatos.sql`.
+Esta rama utiliza la base **ControlEnviosCourierPractica3**, independiente de la base de la práctica 2.
 
-El script crea la base `ControlEnviosCourier`, las tablas `Clientes` y `Paquetes`, la restricción de cédula única y la relación mediante `ClienteId`. Si la base o las tablas ya existen, no las vuelve a crear ni modifica su estructura.
+Las migraciones están en Infrastructure. Desde la raíz del repositorio se puede crear la base con:
+
+```powershell
+dotnet restore ControlEnviosCourier.slnx
+dotnet tool restore
+dotnet ef database update --project ControlEnviosCourier.Infrastructure --startup-project ControlEnviosCourier.API
+```
+
+La migración inicial crea Clientes, Paquetes, EstadosEnvio y Envios, con sus relaciones y restricciones.
+
+Como alternativa, en SSMS ejecutar `Database/CrearBaseDeDatos.sql`. El script crea la base y aplica la migración si todavía no está registrada.
 
 También puede ejecutarse desde PowerShell, con autenticación de Windows:
 
@@ -49,21 +61,21 @@ En `ControlEnviosCourier.API/appsettings.json`, ajustar el servidor a la instanc
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=.\\SQLEXPRESS;Database=ControlEnviosCourier;Trusted_Connection=True;TrustServerCertificate=True;"
+  "DefaultConnection": "Server=.\\SQLEXPRESS;Database=ControlEnviosCourierPractica3;Trusted_Connection=True;TrustServerCertificate=True;"
 }
 ```
 
 La configuración utiliza el usuario de Windows que ejecuta la API. Ese usuario debe tener acceso a la base de datos. `TrustServerCertificate=True` se utiliza para el entorno local de desarrollo.
 
-El contexto se configura manualmente para las tablas existentes. Esta entrega utiliza el script SQL para crear la base; no requiere ejecutar migraciones.
+Si se cambia el nombre de la base, debe coincidir en la conexión de la API y en el script SQL. No es necesario ejecutar el script si ya se creó la base con las migraciones.
 
 ### 4. Restaurar y ejecutar
 
 Desde la raíz del repositorio:
 
 ```powershell
-dotnet restore ControlEnviosCourier.API/ControlEnviosCourier.API.csproj
-dotnet build ControlEnviosCourier.API/ControlEnviosCourier.API.csproj
+dotnet restore ControlEnviosCourier.slnx
+dotnet build ControlEnviosCourier.slnx
 dotnet dev-certs https --trust
 dotnet run --project ControlEnviosCourier.API/ControlEnviosCourier.API.csproj --launch-profile https
 ```
@@ -82,20 +94,38 @@ ControlEnviosCourier.API/
   Controllers/
     ClientesController.cs
     PaquetesController.cs
-  Data/
-    ApplicationDbContext.cs
+    EstadosEnvioController.cs
+    EnviosController.cs
   Models/
-    Cliente.cs
-    Paquete.cs
     Dtos/
       ClienteDto.cs
       GuardarClienteDto.cs
       PaqueteDto.cs
       GuardarPaqueteDto.cs
+      EstadoEnvioDto.cs
+      GuardarEstadoEnvioDto.cs
+      EnvioDto.cs
+      GuardarEnvioDto.cs
   Properties/
     launchSettings.json
   appsettings.json
   Program.cs
+ControlEnviosCourier.Domain/
+  Core/
+    BaseEntity.cs
+  Entities/
+    Cliente.cs
+    Paquete.cs
+    EstadoEnvio.cs
+    Envio.cs
+ControlEnviosCourier.Infrastructure/
+  Context/
+    ApplicationDbContext.cs
+  Migrations/
+  Repositories/
+    GenericRepository.cs
+    ClienteRepository.cs
+    PaqueteRepository.cs
 ```
 
 ## Endpoints
@@ -112,6 +142,16 @@ ControlEnviosCourier.API/
 | POST | `/api/Paquetes` | Registrar un paquete | 201 |
 | PUT | `/api/Paquetes/{id}` | Actualizar un paquete | 204 |
 | DELETE | `/api/Paquetes/{id}` | Eliminar un paquete | 204 |
+| GET | `/api/EstadosEnvio` | Listar estados | 200 |
+| GET | `/api/EstadosEnvio/{id}` | Consultar un estado | 200 |
+| POST | `/api/EstadosEnvio` | Registrar un estado | 201 |
+| PUT | `/api/EstadosEnvio/{id}` | Actualizar un estado | 204 |
+| DELETE | `/api/EstadosEnvio/{id}` | Eliminar un estado | 204 |
+| GET | `/api/Envios` | Listar envíos | 200 |
+| GET | `/api/Envios/{id}` | Consultar un envío | 200 |
+| POST | `/api/Envios` | Registrar un envío | 201 |
+| PUT | `/api/Envios/{id}` | Actualizar un envío | 204 |
+| DELETE | `/api/Envios/{id}` | Eliminar un envío | 204 |
 
 POST asigna el Id automáticamente y devuelve el recurso creado y su ubicación. PUT recibe todos los campos editables. Las respuestas 204 no contienen cuerpo.
 
@@ -142,6 +182,28 @@ Registrar un paquete con POST `/api/Paquetes`, reemplazando `clienteId` por el I
 
 El peso se expresa en kilogramos y se almacena con dos decimales. La fecha de registro la asigna la API al crear el paquete y no se modifica mediante PUT.
 
+Crear un estado con POST `/api/EstadosEnvio`:
+
+```json
+{
+  "nombre": "Pendiente"
+}
+```
+
+Después crear un envío con POST `/api/Envios`, usando los Id reales del paquete y del estado:
+
+```json
+{
+  "paqueteId": 1,
+  "estadoEnvioId": 1,
+  "tarifa": 150.00,
+  "fechaEnvio": "2026-11-14T10:00:00",
+  "fechaEntrega": null
+}
+```
+
+El código de seguimiento se genera al registrar el envío y se conserva al actualizarlo. Las fechas se manejan como fecha y hora local, sin zona horaria. La tarifa es el importe registrado para ese envío y se almacena con dos decimales.
+
 ## Validaciones y errores
 
 - Campos de texto obligatorios y longitudes máximas según los DTO.
@@ -149,14 +211,20 @@ El peso se expresa en kilogramos y se almacena con dos decimales. La fecha de re
 - Peso entre 0.01 y 99999999.99.
 - ClienteId positivo y correspondiente a un cliente existente.
 - Cédula única por cliente.
+- Nombre de estado único.
+- Paquete y estado existentes al registrar o actualizar un envío.
+- Tarifa no negativa y fecha de entrega igual o posterior a la fecha de envío.
 - Un cliente con paquetes asociados no puede eliminarse: primero se deben eliminar o reasignar sus paquetes.
+- Un paquete con envíos o un estado utilizado por envíos tampoco pueden eliminarse. Para borrar registros relacionados, comenzar por el envío.
 
 | Código | Situación |
 | --- | --- |
-| 400 | Datos inválidos o cliente asociado inexistente |
-| 404 | Cliente o paquete solicitado inexistente |
-| 409 | Cédula duplicada o intento de eliminar un cliente con paquetes |
+| 400 | Datos inválidos o recurso asociado inexistente |
+| 404 | Recurso solicitado inexistente |
+| 409 | Cédula o nombre de estado duplicado, o relaciones que impiden eliminar |
 
-## Alcance de esta entrega
+## Entrega
 
-La práctica incluye los CRUD de Clientes y Paquetes. La gestión completa de envíos, tarifas, entregas y seguimiento corresponde a la continuación del proyecto final.
+- Práctica 3: https://github.com/David202010036/ControlEnviosCourier/tree/tarea-3
+- El mismo contenido se publica en develop.
+- La entrega de la práctica 2 se conserva en main.

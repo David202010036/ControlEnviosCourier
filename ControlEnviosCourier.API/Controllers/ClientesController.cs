@@ -1,5 +1,5 @@
-﻿using ControlEnviosCourier.API.Data;
-using ControlEnviosCourier.API.Models;
+using ControlEnviosCourier.Infrastructure.Repositories;
+using ControlEnviosCourier.Domain.Entities;
 using ControlEnviosCourier.API.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +9,18 @@ namespace ControlEnviosCourier.API.Controllers
     [ApiController]
     public class ClientesController : ControllerBase
     {
-        private readonly ApplicationDbContext context;
+        private readonly ClienteRepository repository;
 
-        public ClientesController(ApplicationDbContext context)
+        public ClientesController(ClienteRepository repository)
         {
-            this.context = context;
+            this.repository = repository;
         }
 
         // GET: api/Clientes
         [HttpGet]
         public ActionResult<List<ClienteDto>> ObtenerClientes()
         {
-            var clientes = context.Clientes.ToList();
+            var clientes = repository.GetAll();
             return Ok(clientes.Select(ConvertirDto).ToList());
         }
 
@@ -28,7 +28,7 @@ namespace ControlEnviosCourier.API.Controllers
         [HttpGet("{id:int}")]
         public ActionResult<ClienteDto> ObtenerCliente(int id)
         {
-            var cliente = context.Clientes.Find(id);
+            var cliente = repository.GetById(id);
 
             if (cliente == null)
                 return NotFound("Cliente no encontrado.");
@@ -41,7 +41,7 @@ namespace ControlEnviosCourier.API.Controllers
         public ActionResult<ClienteDto> RegistrarCliente(
             GuardarClienteDto datos)
         {
-            if (context.Clientes.Any(c => c.Cedula == datos.Cedula))
+            if (repository.ExisteCedula(datos.Cedula))
                 return Conflict("Ya existe un cliente con esa cédula.");
 
             var cliente = new Cliente
@@ -54,8 +54,7 @@ namespace ControlEnviosCourier.API.Controllers
                 Direccion = datos.Direccion
             };
 
-            context.Clientes.Add(cliente);
-            context.SaveChanges();
+            repository.Create(cliente);
 
             return CreatedAtAction(
                 nameof(ObtenerCliente),
@@ -68,13 +67,12 @@ namespace ControlEnviosCourier.API.Controllers
         public IActionResult ActualizarCliente(
             int id, GuardarClienteDto datos)
         {
-            var cliente = context.Clientes.Find(id);
+            var cliente = repository.GetById(id);
 
             if (cliente == null)
                 return NotFound("Cliente no encontrado.");
 
-            if (context.Clientes.Any(
-                c => c.Cedula == datos.Cedula && c.Id != id))
+            if (repository.ExisteCedula(datos.Cedula, id))
             {
                 return Conflict("Ya existe otro cliente con esa cédula.");
             }
@@ -86,7 +84,7 @@ namespace ControlEnviosCourier.API.Controllers
             cliente.Correo = datos.Correo;
             cliente.Direccion = datos.Direccion;
 
-            context.SaveChanges();
+            repository.Update(cliente);
 
             return NoContent();
         }
@@ -95,19 +93,18 @@ namespace ControlEnviosCourier.API.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult EliminarCliente(int id)
         {
-            var cliente = context.Clientes.Find(id);
+            var cliente = repository.GetById(id);
 
             if (cliente == null)
                 return NotFound("Cliente no encontrado.");
 
-            if (context.Paquetes.Any(p => p.ClienteId == id))
+            if (repository.TienePaquetes(id))
             {
                 return Conflict(
                     "No se puede eliminar un cliente con paquetes asociados.");
             }
 
-            context.Clientes.Remove(cliente);
-            context.SaveChanges();
+            repository.Delete(cliente);
 
             return NoContent();
         }

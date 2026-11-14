@@ -1,5 +1,5 @@
-﻿using ControlEnviosCourier.API.Data;
-using ControlEnviosCourier.API.Models;
+using ControlEnviosCourier.Infrastructure.Repositories;
+using ControlEnviosCourier.Domain.Entities;
 using ControlEnviosCourier.API.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,24 +9,24 @@ namespace ControlEnviosCourier.API.Controllers
     [ApiController]
     public class PaquetesController : ControllerBase
     {
-        private readonly ApplicationDbContext context;
+        private readonly PaqueteRepository repository;
 
-        public PaquetesController(ApplicationDbContext context)
+        public PaquetesController(PaqueteRepository repository)
         {
-            this.context = context;
+            this.repository = repository;
         }
 
         [HttpGet]
         public ActionResult<List<PaqueteDto>> ObtenerPaquetes()
         {
-            var paquetes = context.Paquetes.ToList();
+            var paquetes = repository.GetAll();
             return Ok(paquetes.Select(ConvertirDto).ToList());
         }
 
         [HttpGet("{id:int}")]
         public ActionResult<PaqueteDto> ObtenerPaquete(int id)
         {
-            var paquete = context.Paquetes.Find(id);
+            var paquete = repository.GetById(id);
 
             if (paquete == null)
                 return NotFound("Paquete no encontrado.");
@@ -38,7 +38,7 @@ namespace ControlEnviosCourier.API.Controllers
         public ActionResult<PaqueteDto> RegistrarPaquete(
             GuardarPaqueteDto datos)
         {
-            if (!context.Clientes.Any(c => c.Id == datos.ClienteId))
+            if (!repository.ExisteCliente(datos.ClienteId))
                 return BadRequest("El cliente indicado no existe.");
 
             var paquete = new Paquete
@@ -49,8 +49,7 @@ namespace ControlEnviosCourier.API.Controllers
                 FechaRegistro = DateTime.Now
             };
 
-            context.Paquetes.Add(paquete);
-            context.SaveChanges();
+            repository.Create(paquete);
 
             return CreatedAtAction(
                 nameof(ObtenerPaquete),
@@ -62,19 +61,19 @@ namespace ControlEnviosCourier.API.Controllers
         public IActionResult ActualizarPaquete(
             int id, GuardarPaqueteDto datos)
         {
-            var paquete = context.Paquetes.Find(id);
+            var paquete = repository.GetById(id);
 
             if (paquete == null)
                 return NotFound("Paquete no encontrado.");
 
-            if (!context.Clientes.Any(c => c.Id == datos.ClienteId))
+            if (!repository.ExisteCliente(datos.ClienteId))
                 return BadRequest("El cliente indicado no existe.");
 
             paquete.Descripcion = datos.Descripcion;
             paquete.Peso = datos.Peso;
             paquete.ClienteId = datos.ClienteId;
 
-            context.SaveChanges();
+            repository.Update(paquete);
 
             return NoContent();
         }
@@ -82,13 +81,15 @@ namespace ControlEnviosCourier.API.Controllers
         [HttpDelete("{id:int}")]
         public IActionResult EliminarPaquete(int id)
         {
-            var paquete = context.Paquetes.Find(id);
+            var paquete = repository.GetById(id);
 
             if (paquete == null)
                 return NotFound("Paquete no encontrado.");
 
-            context.Paquetes.Remove(paquete);
-            context.SaveChanges();
+            if (repository.TieneEnvios(id))
+                return Conflict("No se puede eliminar un paquete con envíos asociados.");
+
+            repository.Delete(paquete);
 
             return NoContent();
         }
@@ -100,7 +101,7 @@ namespace ControlEnviosCourier.API.Controllers
                 Id = paquete.Id,
                 Descripcion = paquete.Descripcion,
                 Peso = paquete.Peso,
-                FechaRegistro = paquete.FechaRegistro,
+                FechaRegistro = DateTime.SpecifyKind(paquete.FechaRegistro, DateTimeKind.Unspecified),
                 ClienteId = paquete.ClienteId
             };
         }

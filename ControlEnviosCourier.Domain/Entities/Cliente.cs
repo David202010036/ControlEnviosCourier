@@ -1,8 +1,9 @@
-﻿namespace ControlEnviosCourier.API.Models
+using ControlEnviosCourier.Domain.Core;
+
+namespace ControlEnviosCourier.Domain.Entities
 {
-    public class Cliente
+    public class Cliente : BaseEntity
     {
-        public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Apellido { get; set; } = string.Empty;
         public string Cedula { get; set; } = string.Empty;
