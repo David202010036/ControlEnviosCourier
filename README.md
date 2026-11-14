@@ -6,7 +6,7 @@
 
 **Práctica 2:** CRUD Web API en ASP.NET Core con SQL Server.
 
-Esta entrega implementa la administración de clientes y paquetes. Cada paquete pertenece a un cliente. Los datos se conservan en SQL Server al reiniciar la API.
+API para registrar, consultar, actualizar y eliminar clientes y paquetes de un courier. Cada paquete pertenece a un cliente y los datos se guardan en SQL Server.
 
 ## Tecnologías
 
@@ -18,7 +18,7 @@ Esta entrega implementa la administración de clientes y paquetes. Cada paquete 
 ## Requisitos
 
 - SDK de .NET 10.
-- SQL Server; se comprobó con SQL Server 2022 Express.
+- SQL Server 2022 Express.
 - SQL Server Management Studio (SSMS) o `sqlcmd` para ejecutar el script SQL.
 - Visual Studio con la carga de trabajo de desarrollo de ASP.NET y web, o la CLI de .NET.
 
@@ -156,14 +156,6 @@ El peso se expresa en kilogramos y se almacena con dos decimales. La fecha de re
 | 400 | Datos inválidos o cliente asociado inexistente |
 | 404 | Cliente o paquete solicitado inexistente |
 | 409 | Cédula duplicada o intento de eliminar un cliente con paquetes |
-
-## Verificación realizada
-
-Se realizaron 39 comprobaciones HTTP que cubrieron registro, consulta, actualización, eliminación, validaciones, relaciones y conservación de los datos después de reiniciar la API. Los registros ficticios usados en esas pruebas se eliminaron al finalizar.
-
-También se verificó el script en una base temporal nueva: creó ambas tablas y la clave foránea correctamente. La revisión final de compilación terminó con cero errores y cero advertencias, y la auditoría NuGet no reportó vulnerabilidades conocidas en los paquetes resueltos.
-
-Para repetir la comprobación funcional, ejecutar POST y GET de ambas entidades, actualizar mediante PUT y consultar los cambios después de reiniciar la API. Al terminar, eliminar primero el paquete y luego el cliente. Comprobar también las respuestas 400, 404 y 409 descritas anteriormente.
 
 ## Alcance de esta entrega
 
