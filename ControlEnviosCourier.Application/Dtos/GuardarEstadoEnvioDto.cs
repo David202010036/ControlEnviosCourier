@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ControlEnviosCourier.API.Models.Dtos
+namespace ControlEnviosCourier.Application.Dtos
 {
     public class GuardarEstadoEnvioDto
     {

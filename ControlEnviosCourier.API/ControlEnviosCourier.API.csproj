@@ -19,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ControlEnviosCourier.Domain\ControlEnviosCourier.Domain.csproj" />
-    <ProjectReference Include="..\ControlEnviosCourier.Infrastructure\ControlEnviosCourier.Infrastructure.csproj" />
+    <ProjectReference Include="..\ControlEnviosCourier.Application\ControlEnviosCourier.Application.csproj" />
   </ItemGroup>
 
 </Project>

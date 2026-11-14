@@ -1,6 +1,6 @@
-CREATE DATABASE ControlEnviosCourierPractica3;
+CREATE DATABASE ControlEnviosCourierPractica4;
 
-USE ControlEnviosCourierPractica3;
+USE ControlEnviosCourierPractica4;
 
 CREATE TABLE Clientes
 (

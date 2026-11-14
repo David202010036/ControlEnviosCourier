@@ -1,6 +1,6 @@
-using ControlEnviosCourier.API.Models.Dtos;
-using ControlEnviosCourier.Domain.Entities;
-using ControlEnviosCourier.Infrastructure.Repositories;
+using ControlEnviosCourier.Application.Dtos;
+using ControlEnviosCourier.Application.Models;
+using ControlEnviosCourier.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ControlEnviosCourier.API.Controllers
@@ -9,65 +9,48 @@ namespace ControlEnviosCourier.API.Controllers
     [Route("api/[controller]")]
     public class EstadosEnvioController : ControllerBase
     {
-        private readonly GenericRepository<EstadoEnvio> repository;
-        private readonly GenericRepository<Envio> envios;
+        private readonly EstadoEnvioService service;
 
-        public EstadosEnvioController(GenericRepository<EstadoEnvio> repository,
-            GenericRepository<Envio> envios)
+        public EstadosEnvioController(EstadoEnvioService service)
         {
-            this.repository = repository;
-            this.envios = envios;
+            this.service = service;
         }
 
         [HttpGet]
-        public ActionResult<List<EstadoEnvioDto>> ObtenerEstados()
+        public ActionResult<ServiceResult<List<EstadoEnvioDto>>> ObtenerEstados()
         {
-            return Ok(repository.GetAll().Select(ConvertirDto).ToList());
+            var resultado = service.ObtenerEstados();
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
         [HttpGet("{id:int}")]
-        public ActionResult<EstadoEnvioDto> ObtenerEstado(int id)
+        public ActionResult<ServiceResult<EstadoEnvioDto>> ObtenerEstado(int id)
         {
-            var estado = repository.GetById(id);
-            if (estado == null) return NotFound("Estado no encontrado.");
-            return Ok(ConvertirDto(estado));
+            var resultado = service.ObtenerEstado(id);
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
         [HttpPost]
-        public ActionResult<EstadoEnvioDto> RegistrarEstado(GuardarEstadoEnvioDto datos)
+        public ActionResult<ServiceResult<EstadoEnvioDto>> RegistrarEstado(GuardarEstadoEnvioDto datos)
         {
-            if (repository.Any(e => e.Nombre == datos.Nombre))
-                return Conflict("Ya existe un estado con ese nombre.");
-            var estado = repository.Create(new EstadoEnvio { Nombre = datos.Nombre });
-            return CreatedAtAction(nameof(ObtenerEstado), new { id = estado.Id }, ConvertirDto(estado));
+            var resultado = service.RegistrarEstado(datos);
+            if (!resultado.Success)
+                return StatusCode(resultado.StatusCode, resultado);
+            return CreatedAtAction(nameof(ObtenerEstado), new { id = resultado.Data!.Id }, resultado);
         }
 
         [HttpPut("{id:int}")]
-        public IActionResult ActualizarEstado(int id, GuardarEstadoEnvioDto datos)
+        public ActionResult<ServiceResult<EstadoEnvioDto>> ActualizarEstado(int id, GuardarEstadoEnvioDto datos)
         {
-            var estado = repository.GetById(id);
-            if (estado == null) return NotFound("Estado no encontrado.");
-            if (repository.Any(e => e.Nombre == datos.Nombre && e.Id != id))
-                return Conflict("Ya existe otro estado con ese nombre.");
-            estado.Nombre = datos.Nombre;
-            repository.Update(estado);
-            return NoContent();
+            var resultado = service.ActualizarEstado(id, datos);
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
         [HttpDelete("{id:int}")]
-        public IActionResult EliminarEstado(int id)
+        public ActionResult<ServiceResult<bool>> EliminarEstado(int id)
         {
-            var estado = repository.GetById(id);
-            if (estado == null) return NotFound("Estado no encontrado.");
-            if (envios.Any(e => e.EstadoEnvioId == id))
-                return Conflict("No se puede eliminar un estado utilizado por envíos.");
-            repository.Delete(estado);
-            return NoContent();
-        }
-
-        private static EstadoEnvioDto ConvertirDto(EstadoEnvio estado)
-        {
-            return new EstadoEnvioDto { Id = estado.Id, Nombre = estado.Nombre };
+            var resultado = service.EliminarEstado(id);
+            return StatusCode(resultado.StatusCode, resultado);
         }
     }
 }

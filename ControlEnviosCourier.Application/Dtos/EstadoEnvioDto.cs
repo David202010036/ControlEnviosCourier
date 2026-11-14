@@ -1,4 +1,4 @@
-namespace ControlEnviosCourier.API.Models.Dtos
+namespace ControlEnviosCourier.Application.Dtos
 {
     public class EstadoEnvioDto
     {
