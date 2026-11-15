@@ -1,129 +1,56 @@
-﻿using ControlEnviosCourier.API.Data;
-using ControlEnviosCourier.API.Models;
-using ControlEnviosCourier.API.Models.Dtos;
+using ControlEnviosCourier.Application.Dtos;
+using ControlEnviosCourier.Application.Models;
+using ControlEnviosCourier.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ControlEnviosCourier.API.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class ClientesController : ControllerBase
     {
-        private readonly ApplicationDbContext context;
+        private readonly ClienteService service;
 
-        public ClientesController(ApplicationDbContext context)
+        public ClientesController(ClienteService service)
         {
-            this.context = context;
+            this.service = service;
         }
 
-        // GET: api/Clientes
         [HttpGet]
-        public ActionResult<List<ClienteDto>> ObtenerClientes()
+        public ActionResult<ServiceResult<List<ClienteDto>>> ObtenerClientes()
         {
-            var clientes = context.Clientes.ToList();
-            return Ok(clientes.Select(ConvertirDto).ToList());
+            var resultado = service.ObtenerClientes();
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
-        // GET: api/Clientes/1
         [HttpGet("{id:int}")]
-        public ActionResult<ClienteDto> ObtenerCliente(int id)
+        public ActionResult<ServiceResult<ClienteDto>> ObtenerCliente(int id)
         {
-            var cliente = context.Clientes.Find(id);
-
-            if (cliente == null)
-                return NotFound("Cliente no encontrado.");
-
-            return Ok(ConvertirDto(cliente));
+            var resultado = service.ObtenerCliente(id);
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
-        // POST: api/Clientes
         [HttpPost]
-        public ActionResult<ClienteDto> RegistrarCliente(
-            GuardarClienteDto datos)
+        public ActionResult<ServiceResult<ClienteDto>> RegistrarCliente(GuardarClienteDto datos)
         {
-            if (context.Clientes.Any(c => c.Cedula == datos.Cedula))
-                return Conflict("Ya existe un cliente con esa cédula.");
-
-            var cliente = new Cliente
-            {
-                Nombre = datos.Nombre,
-                Apellido = datos.Apellido,
-                Cedula = datos.Cedula,
-                Telefono = datos.Telefono,
-                Correo = datos.Correo,
-                Direccion = datos.Direccion
-            };
-
-            context.Clientes.Add(cliente);
-            context.SaveChanges();
-
-            return CreatedAtAction(
-                nameof(ObtenerCliente),
-                new { id = cliente.Id },
-                ConvertirDto(cliente));
+            var resultado = service.RegistrarCliente(datos);
+            if (!resultado.Success)
+                return StatusCode(resultado.StatusCode, resultado);
+            return CreatedAtAction(nameof(ObtenerCliente), new { id = resultado.Data!.Id }, resultado);
         }
 
-        // PUT: api/Clientes/1
         [HttpPut("{id:int}")]
-        public IActionResult ActualizarCliente(
-            int id, GuardarClienteDto datos)
+        public ActionResult<ServiceResult<ClienteDto>> ActualizarCliente(int id, GuardarClienteDto datos)
         {
-            var cliente = context.Clientes.Find(id);
-
-            if (cliente == null)
-                return NotFound("Cliente no encontrado.");
-
-            if (context.Clientes.Any(
-                c => c.Cedula == datos.Cedula && c.Id != id))
-            {
-                return Conflict("Ya existe otro cliente con esa cédula.");
-            }
-
-            cliente.Nombre = datos.Nombre;
-            cliente.Apellido = datos.Apellido;
-            cliente.Cedula = datos.Cedula;
-            cliente.Telefono = datos.Telefono;
-            cliente.Correo = datos.Correo;
-            cliente.Direccion = datos.Direccion;
-
-            context.SaveChanges();
-
-            return NoContent();
+            var resultado = service.ActualizarCliente(id, datos);
+            return StatusCode(resultado.StatusCode, resultado);
         }
 
-        // DELETE: api/Clientes/1
         [HttpDelete("{id:int}")]
-        public IActionResult EliminarCliente(int id)
+        public ActionResult<ServiceResult<bool>> EliminarCliente(int id)
         {
-            var cliente = context.Clientes.Find(id);
-
-            if (cliente == null)
-                return NotFound("Cliente no encontrado.");
-
-            if (context.Paquetes.Any(p => p.ClienteId == id))
-            {
-                return Conflict(
-                    "No se puede eliminar un cliente con paquetes asociados.");
-            }
-
-            context.Clientes.Remove(cliente);
-            context.SaveChanges();
-
-            return NoContent();
-        }
-
-        private static ClienteDto ConvertirDto(Cliente cliente)
-        {
-            return new ClienteDto
-            {
-                Id = cliente.Id,
-                Nombre = cliente.Nombre,
-                Apellido = cliente.Apellido,
-                Cedula = cliente.Cedula,
-                Telefono = cliente.Telefono,
-                Correo = cliente.Correo,
-                Direccion = cliente.Direccion
-            };
+            var resultado = service.EliminarCliente(id);
+            return StatusCode(resultado.StatusCode, resultado);
         }
     }
 }
