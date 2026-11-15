@@ -1,9 +1,8 @@
-using ControlEnviosCourier.Domain.Core;
-
-namespace ControlEnviosCourier.Domain.Entities
+﻿namespace ControlEnviosCourier.API.Models
 {
-    public class Paquete : BaseEntity
+    public class Paquete
     {
+        public int Id { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public decimal Peso { get; set; }
         public DateTime FechaRegistro { get; set; } = DateTime.Now;

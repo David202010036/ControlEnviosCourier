@@ -1,6 +1,6 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace ControlEnviosCourier.Application.Dtos
+namespace ControlEnviosCourier.API.Models.Dtos
 {
     public class GuardarPaqueteDto
     {

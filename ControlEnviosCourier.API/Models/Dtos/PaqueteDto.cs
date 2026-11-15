@@ -1,4 +1,4 @@
-namespace ControlEnviosCourier.Application.Dtos
+﻿namespace ControlEnviosCourier.API.Models.Dtos
 {
     public class PaqueteDto
     {

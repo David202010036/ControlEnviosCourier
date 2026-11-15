@@ -1,6 +1,3 @@
 <Solution>
   <Project Path="ControlEnviosCourier.API/ControlEnviosCourier.API.csproj" Id="0f520921-4852-44f6-a60e-0bdfd20cfd2e" />
-  <Project Path="ControlEnviosCourier.Application/ControlEnviosCourier.Application.csproj" />
-  <Project Path="ControlEnviosCourier.Domain/ControlEnviosCourier.Domain.csproj" />
-  <Project Path="ControlEnviosCourier.Infrastructure/ControlEnviosCourier.Infrastructure.csproj" />
 </Solution>

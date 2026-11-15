@@ -1,6 +1,6 @@
-namespace ControlEnviosCourier.Application.Dtos
+﻿namespace ControlEnviosCourier.API.Models
 {
-    public class ClienteDto
+    public class Cliente
     {
         public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
